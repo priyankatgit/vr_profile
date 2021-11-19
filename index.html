@@ -2,14 +2,14 @@
   <head>
     <script src="https://aframe.io/releases/1.2.0/aframe.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.2.0/dist/aframe-environment-component.min.js"></script>
-    <script src="https://rawgit.com/mayognaise/aframe-gif-shader/master/dist/aframe-gif-shader.min.js"></script>
+    <!-- <script src="https://rawgit.com/mayognaise/aframe-gif-shader/master/dist/aframe-gif-shader.min.js"></script> -->
     <script src="js/animation-mixer.js"></script>
     <script src="js/components.js"></script>
   </head>
   <body>
     <a-scene light="type: ambient; color: #BBB">
       <a-assets id="assets">
-        <img id="my-image" src="my_pic.jpeg" />
+        <img id="my-image" src="images/my_pic.jpeg" />
         <img id="imgJS" src="images/js_1.png" />
         <img id="imgNode" src="images/node.png" />
         <img id="imgReact" src="images/react1.png" />
@@ -29,7 +29,7 @@
         <img id="imgTwitter" src="images/twitter.png" />
         <img id="imgStack" src="images/stack-overflow.png" />
 
-        <video id="myIntro" src="/intro2.mp4" autoplay loop="true"></video>
+        <video id="myIntro" src="images/intro2.mp4" autoplay loop="true"></video>
       </a-assets>
 
       <a-entity environment="preset: contact;lighting:point;skyType:color;skyColor:#000;grid:none;dressing:none;ground:noise;groundColor:#C67B5C;"></a-entity>
