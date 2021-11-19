@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Dev.N]]></title><description><![CDATA[Dev.N]]></description><link>https://www.nostalgia.dev</link><generator>RSS for Node</generator><lastBuildDate>Wed, 10 Nov 2021 10:35:55 GMT</lastBuildDate><atom:link href="https://www.nostalgia.dev/rss.xml" rel="self" type="application/rss+xml"/><language><![CDATA[en]]></language><ttl>60</ttl><item><title><![CDATA[Realtime Drawing by using WebSocket and FabricJS]]></title><description><![CDATA[<p>By using Channel and FebricJS, I've made a real-time drawing sample.</p>
+<p><img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1634959146544/unVNGx2t8.gif" alt="screencast 2021-10-23 08-43-16.gif" /></p>
+<p>Looks cool, isn't it? 
+You can find complete implemented example at 
+<a target="_blank" href="https://github.com/priyankatgit/realtime_draw_websocket">github/priyankatgit/realtime_draw_websocket</a></p>
+<h3 id="febricjshttpfabricjscom"><a target="_blank" href="http://fabricjs.com/">FebricJS</a></h3>
+<blockquote>
+<p><a target="_blank" href="https://www.nostalgia.dev/fabricjs-made-canvas-easy-as-pie">Fabric.js</a> is a powerful and simple Javascript HTML5 canvas library· Fabric provides interactive object model on top of canvas element </p>
+</blockquote>
+<h2 id="what-is-websockethttpswwwgeeksforgeeksorgwhat-is-web-socket-and-how-it-is-different-from-the-http"><a target="_blank" href="https://www.geeksforgeeks.org/what-is-web-socket-and-how-it-is-different-from-the-http/">What is WebSocket?</a></h2>
+<blockquote>
+<p>WebSocket: WebSocket is bidirectional, a full-duplex protocol that is used in the same scenario of client-server communication, unlike HTTP it starts from ws:// or wss://. It is a stateful protocol, which means the connection between client and server will keep alive until it is terminated by either party (client or server). after closing the connection by either of the client and server, the connection is terminated from both the end. </p>
+</blockquote>
+<p><a target="_blank" href="https://www.geeksforgeeks.org/what-is-web-socket-and-how-it-is-different-from-the-http/">Check this reference</a> to know the difference between HTTP and WebSocket in detail.</p>
+<p>For the WebSocket implementation, we need a client-server architecture and I'm using the Django web framework to establish full-duplex communication channels.</p>
+<p><a target="_blank" href="https://channels.readthedocs.io/en/stable/introduction.html">Channel</a> is the python package that extends Django asynchronous requests and gives out-of-the-box functionality to handle long-lived connections.</p>
+<p>So, before diving further let me divide the channel into three simple steps to establish a socket connection.</p>
+<ol>
+<li>Routing setup - It's similar to Django URL configuration</li>
+<li>Defining consumer - Where business logic lives </li>
+<li>Setup channel Layer - Communication bridge across different instances </li>
+</ol>
+<h3 id="1-http-and-websocket-routing">1. HTTP and WebSocket routing</h3>
+<p>In a simple term, we need to first assign a job to handle regular HTTP requests to Django ASGI's application and Webscoket connection to the channel handler.</p>
+<pre><code class="lang-python"><span class="hljs-keyword">from</span> django.core.asgi <span class="hljs-keyword">import</span> get_asgi_application
+
+application = ProtocolTypeRouter({
+    <span class="hljs-string">"http"</span>: get_asgi_application(),
+    <span class="hljs-string">"websocket"</span>: AuthMiddlewareStack(
+        URLRouter(
+            draw.routing.websocket_urlpatterns
+        )
+    ),
+})
+</code></pre>
+<pre><code class="lang-python">websocket_urlpatterns = [
+    re_path(<span class="hljs-string">r'ws/draw/(?P&lt;room_name&gt;\w+)/$'</span>, consumers.DrawConsumer.as_asgi()),
+]
+</code></pre>
+<p>URLRouter just contains the list of URL patterns that are mapped to the consumers. You can compare the consumer to the Django view.</p>
+<h3 id="2-define-consumer">2. Define consumer</h3>
+<p>The consumer is just a list of the derived function from the WebsocketConsumer or AsyncWebsocketConsumer. These functions are called automatically when the event happens.</p>
+<pre><code class="lang-python"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyConsumer</span>(<span class="hljs-params">AsyncWebsocketConsumer</span>):</span>
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">connect</span>(<span class="hljs-params">self</span>):</span>
+        self.room_name = self.scope[<span class="hljs-string">'url_route'</span>][<span class="hljs-string">'kwargs'</span>][<span class="hljs-string">'room_name'</span>]
+
+        <span class="hljs-comment"># Join the group</span>
+        <span class="hljs-keyword">await</span> self.channel_layer.group_add(
+            self.room_name,
+            self.channel_name
+        )
+
+        <span class="hljs-keyword">await</span> self.accept()
+
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">disconnect</span>(<span class="hljs-params">self, close_code</span>):</span>
+        <span class="hljs-comment"># Exit from the group</span>
+        <span class="hljs-keyword">await</span> self.channel_layer.group_discard(
+            self.room_name,
+            self.channel_name
+        )
+
+   <span class="hljs-comment"># Receive message from WebSocket</span>
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">receive</span>(<span class="hljs-params">self, msg</span>):</span>
+
+        <span class="hljs-comment"># Send message to all member of group</span>
+        <span class="hljs-keyword">await</span> self.channel_layer.group_send(
+            self.room_name,
+            {
+                <span class="hljs-string">'type'</span>: <span class="hljs-string">'foo'</span>,
+                <span class="hljs-string">'message'</span>: msg
+            }
+        )
+
+    <span class="hljs-comment"># Receive the delegated message</span>
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">foo</span>(<span class="hljs-params">self, event</span>):</span>
+        <span class="hljs-keyword">pass</span>
+</code></pre>
+<h4 id="connect-event">Connect Event</h4>
+<p>Connect event is called when a socket connection is established without an error and every connection is given to a unique random name and that value is assigned to<code>channel_name</code>.</p>
+<p><code>self.room_name</code> is a group name and by using <code>group_add</code> API, we can make a group that has multiple connection(channel_name) details.</p>
+<h4 id="receive-event">Receive Event</h4>
+<p>When any message is posted to a particular group, this event is triggered. We can use <code>group_send</code> API further and the same message can be delivered to all members using the group name. 
+In this example, the group name is stored in the <code>self.room_name</code> variable.</p>
+<h4 id="disconnect-event">Disconnect Event</h4>
+<p>This event is called when a connection is dropped either by the client or by the server.</p>
+<h3 id="3-define-channel-layer">3. Define channel layer</h3>
+<p>The Channel layer is used to persist messages which are passed between different instances. 
+Redis is used as a message broker in the backend and it is recommended to use in Production. It is required to install <code>channels_redis</code> package for the Redis channel layer.</p>
+<p>However, <a target="_blank" href="https://channels.readthedocs.io/en/latest/topics/channel_layers.html#in-memory-channel-layer">In-Memory Channel Layer</a> can also be used in the development mode.</p>
+<pre><code class="lang-python">CHANNEL_LAYERS = {
+    <span class="hljs-string">'default'</span>: {
+        <span class="hljs-string">'BACKEND'</span>: <span class="hljs-string">'channels_redis.core.RedisChannelLayer'</span>,
+        <span class="hljs-string">'CONFIG'</span>: {
+            <span class="hljs-string">"hosts"</span>: [(<span class="hljs-string">'localhost'</span>, <span class="hljs-number">6379</span>)],
+        },
+    },
+}
+</code></pre>
+<h3 id="let-move-to-the-client-side">Let move to the client-side</h3>
+<p>Once server configuration is done, we can initiate Websocket connection from the browser as follow:</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">const</span> socketConnection = <span class="hljs-keyword">new</span> WebSocket(
+    <span class="hljs-string">"ws://"</span> + <span class="hljs-built_in">window</span>.location.host + <span class="hljs-string">"/ws/draw/free_draw/"</span>
+ );
+</code></pre>
+<p>Notice that <code>/ws/draw/free_draw/</code> is matched to the pattern which is defined in the 
+URL pattern list where <code>free_draw</code> is group name in which everybody else will be joined.</p>
+<p>onmessage event will be triggered if anybody will send the message in the "free_draw" group.</p>
+<pre><code class="lang-javascript">socketConnection.onmessage = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">e</span>) </span>{ }
+</code></pre>
+<p>Send API can be used to post a message to all joined members to the group "free_draw"</p>
+<pre><code class="lang-javascript">socketConnection.send();
+</code></pre>
+]]></description><link>https://www.nostalgia.dev/realtime-drawing-by-using-websocket-and-fabricjs</link><guid isPermaLink="true">https://www.nostalgia.dev/realtime-drawing-by-using-websocket-and-fabricjs</guid><dc:creator><![CDATA[Priyank Patel]]></dc:creator><pubDate>Sat, 23 Oct 2021 03:40:18 GMT</pubDate><cover_image>https://cdn.hashnode.com/res/hashnode/image/upload/v1634560470120/95cS5mWco.jpeg</cover_image></item><item><title><![CDATA[NSQ - Things that nobody will tell you]]></title><description><![CDATA[<p>This article requires a general understanding of the message queue system. If you're not familiar with that concept, I recommend you understand the concept first.</p>
+<p>Nowadays companies promote the microservice based architecture for the enterprise level projects and message queue service is the fundamental component to achieve that. </p>
+<p><strong>Microservice</strong> is nothing else but the division of a big project into the smaller applications based on their work scope yet connected to each other which shares essential information from one to another app to move forward the workflow of the system.</p>
+<h3 id="so-how-nsqhttpsnsqio-works">So how <a target="_blank" href="https://nsq.io/">NSQ</a> works?</h3>
+<p>Don't worry, I will not flood this article with the same things which have already been written many times over the web. Go through the given below articles to have more insight about NSQ.</p>
+<ul>
+<li>https://segment.com/blog/scaling-nsq/</li>
+<li>https://dev.to/vguleaev/nsq-tutorial-build-a-simple-message-queue-using-nsq-43eh</li>
+</ul>
+<p><img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1634111673793/uto0TkFLd.gif" alt="nsq.gif" /></p>
+<p>That's right, now you've knowledge how NSQ does its job but in <strong>production work</strong> the most important aspect is to handle messages which consumer(subscriber) is not able to process, mostly <em>due to the failure of business logic while processing the message.</em> </p>
+<p>NSQ supports many languages to process messages at <a target="_blank" href="https://nsq.io/clients/client_libraries.html">client side</a>. <br />
+Let's take a looks at <a target="_blank" href="https://github.com/dudleycarr/nsqjs">JavaScript</a> implementation </p>
+<h3 id="without-failure-handling">Without failure handling</h3>
+<pre><code class="lang-javascript"><span class="hljs-keyword">const</span> nsq = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nsqjs'</span>)
+
+<span class="hljs-keyword">const</span> reader = <span class="hljs-keyword">new</span> nsq.Reader(<span class="hljs-string">'sample_topic'</span>, <span class="hljs-string">'test_channel'</span>, {
+  <span class="hljs-attr">lookupdHTTPAddresses</span>: <span class="hljs-string">'127.0.0.1:4161'</span>
+})
+
+reader.connect()
+
+reader.on(<span class="hljs-string">'message'</span>, <span class="hljs-function"><span class="hljs-params">msg</span> =&gt;</span> {
+  <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> Business logic to process message</span>
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Received message [%s]: %s'</span>, msg.id, msg.body.toString())
+  msg.finish()
+})
+</code></pre>
+<p>Message considered as processed once <code>msg.finish()</code> is called inside the <code>Reader.MESSAGE</code> event. If the <code>finish()</code> method is not called then the nsq client add the message in queue again subsequently after some delay until the message is not processed successfully. </p>
+<p>NSQ client decides to requeue the message based on the <code>maxAttempts</code> configuration, after the max attempts, the message is declared as a dead and marked as finished automatically; and that's where we have to log down dead message to handle it manually.</p>
+<blockquote>
+<p><a target="_blank" href="https://github.com/dudleycarr/nsqjs#usage">maxAttempts: 0</a></p>
+<p>The number of times a given message will be attempted (given to MESSAGE handler) before it will be handed to the DISCARD handler and then automatically finished. 0 means that there is no limit. If no DISCARD handler is specified and maxAttempts &gt; 0, then the message will be finished automatically when the number of attempts has been exhausted.</p>
+</blockquote>
+<h3 id="with-failure-handling">With failure handling</h3>
+<pre><code class="lang-javascript"><span class="hljs-keyword">const</span> nsq = <span class="hljs-built_in">require</span>(<span class="hljs-string">"nsqjs"</span>);
+
+<span class="hljs-keyword">const</span> reader = <span class="hljs-keyword">new</span> nsq.Reader(<span class="hljs-string">"chat"</span>, <span class="hljs-string">"chat"</span>, {
+  <span class="hljs-attr">lookupdHTTPAddresses</span>: <span class="hljs-string">"127.0.0.1:4161"</span>,
+});
+
+reader.connect();
+
+reader.on(<span class="hljs-string">"message"</span>, <span class="hljs-function">(<span class="hljs-params">msg</span>) =&gt;</span> {
+  <span class="hljs-keyword">let</span> isProcessed = processMessage(msg);
+  <span class="hljs-keyword">if</span>(isProcessed) {
+    msg.finish();
+  }
+});
+
+reader.on(<span class="hljs-string">"discard"</span>, <span class="hljs-function">(<span class="hljs-params">msg</span>) =&gt;</span> {
+  <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> Log dead messages in the Database or File to handle it manually.</span>
+  msg.finish();
+});
+
+<span class="hljs-keyword">const</span> processMessage= <span class="hljs-function">(<span class="hljs-params">msg</span>) =&gt;</span> {
+   <span class="hljs-keyword">try</span>{
+     <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> Business logic to process message</span>
+     <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Received message [%s]: %s"</span>, msg.id, msg.body.toString());
+
+     <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>
+
+   }<span class="hljs-keyword">catch</span>(error) {
+     <span class="hljs-built_in">console</span>.error(error)
+     <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+   }
+}
+</code></pre>
+<p>Consider <code>processMessage</code> is the function where the app's logic resides to take action on a message. If everything goes ok, we mark the message as finished by calling the <code>finish</code> method else the message will be requeued constantly until max attempt is reached. </p>
+<p>After the max retry, <code>Reader.DISCARD</code> is called, where dead message detail can be written to the file or database to handle it manually. </p>
+<p>As I said earlier, nsq has different clients to process messages and different clients may have different ways to handle dead messages. <br />
+For instance, <a target="_blank" href="https://pynsq.readthedocs.io/en/latest/">pynsq</a> client is for python and it has <a target="_blank" href="https://pynsq.readthedocs.io/en/latest/reader.html#nsq.Reader.giving_up"><code>giving_up()</code></a> API to handle dead messages.</p>
+<h3 id="bonus">Bonus</h3>
+<p>There are many distributed open source messaging systems and Philip Feng has described most of them in his <a target="_blank" href="https://medium.com/@philipfeng/modern-open-source-messaging-apache-kafka-rabbitmq-nats-pulsar-and-nsq-ca3bf7422db5">article</a></p>
+<p>Credits: <br />
+Banner image <a target="_blank" href="https://pixabay.com/photos/queue-playmobil-to-wave-655820/">siskav</a>, nsq gif <a target="_blank" href="https://nsq.io/overview/design.html">nsq</a> <br />
+NSQ Article reference: <a target="_blank" href="https://segment.com/blog/scaling-nsq/">Calvin French-Owen</a>,  <a target="_blank" href="https://dev.to/vguleaev/nsq-tutorial-build-a-simple-message-queue-using-nsq-43eh">Vladislav Guleaev</a>, <a target="_blank" href="https://medium.com/@philipfeng/modern-open-source-messaging-apache-kafka-rabbitmq-nats-pulsar-and-nsq-ca3bf7422db5">Philip Feng Ph.D</a></p>
+]]></description><link>https://www.nostalgia.dev/nsq-things-that-nobody-will-tell-you</link><guid isPermaLink="true">https://www.nostalgia.dev/nsq-things-that-nobody-will-tell-you</guid><dc:creator><![CDATA[Priyank Patel]]></dc:creator><pubDate>Wed, 13 Oct 2021 11:45:49 GMT</pubDate><cover_image>https://cdn.hashnode.com/res/hashnode/image/upload/v1634111507579/ZdAJHgXah.jpeg</cover_image></item><item><title><![CDATA[FabricJS made canvas drawing easy as pie]]></title><description><![CDATA[<p>If you ever thought to take a hand at Canvas drawing and hesitate to it because geometry is not your subject, you should first start with FabricJS.</p>
+<p>Canvas native API could be confusing if you just have started on it.<br />
+Let's take a simple example to draw a rectangle, rotated at 45 degrees.</p>
+<p>By using native canvas API.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> canvasEl = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'c'</span>);
+<span class="hljs-keyword">var</span> context = canvasEl.getContext(<span class="hljs-string">'2d'</span>);
+context.fillStyle = <span class="hljs-string">'red'</span>;
+
+context.translate(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>);
+context.rotate(<span class="hljs-built_in">Math</span>.PI / <span class="hljs-number">180</span> * <span class="hljs-number">45</span>); <span class="hljs-comment">//Converts value in radian</span>
+context.fillRect(<span class="hljs-number">-10</span>, <span class="hljs-number">-10</span>, <span class="hljs-number">20</span>, <span class="hljs-number">20</span>);
+</code></pre>
+<p>Same thing but by using Febirc.</p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> canvas = <span class="hljs-keyword">new</span> fabric.Canvas(<span class="hljs-string">'c'</span>);
+
+<span class="hljs-comment">// create a rectangle with angle=45</span>
+<span class="hljs-keyword">var</span> rect = <span class="hljs-keyword">new</span> fabric.Rect({
+  <span class="hljs-attr">left</span>: <span class="hljs-number">100</span>,
+  <span class="hljs-attr">top</span>: <span class="hljs-number">100</span>,
+  <span class="hljs-attr">fill</span>: <span class="hljs-string">'red'</span>,
+  <span class="hljs-attr">width</span>: <span class="hljs-number">20</span>,
+  <span class="hljs-attr">height</span>: <span class="hljs-number">20</span>,
+  <span class="hljs-attr">angle</span>: <span class="hljs-number">45</span>
+});
+
+canvas.add(rect);
+</code></pre>
+<p><img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1624070677824/0uM2WT9XX.png" alt="Canvas - Rectangle" /></p>
+<p>Drawing with Fabric is self-explanatory, isn't it! Whereas in canvas example, someone probably wonder what is <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext">getContext</a> for, what is <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/translate">translate</a> doing? why extra overhead to convert a value from degree to radian?</p>
+<p><a target="_blank" href="http://fabricjs.com/fabric-intro-part-1">Fabric</a> abstracts much more complex canvas operations and in addition, it exposes rich <a target="_blank" href="http://fabricjs.com/events">observing events and object events</a> which makes integration and customization extremely smooth.</p>
+<p>I have made one sample using <code>path:created</code> observing event and <a target="_blank" href="http://fabricjs.com/fabric-intro-part-4"><code>freeDrawingBrush</code> </a> API. This event triggers each time when path drawing ends and <strong><em> provides full detail of the drawn path</em></strong>. Using that data, the same path is automatically drawn right beside the canvas on another canvas(Mirror Canvas).</p>
+<p>The full sample was originally posted at <a target="_blank" href="http://fabricjs.com/freedrawing">http://fabricjs.com/freedrawing</a>. For the sake of simplicity, I have removed different types of drawing modes and added mirror drawing canvas.</p>
+<div class="embed-wrapper"><div class="embed-loading"><div class="loadingRow"></div><div class="loadingRow"></div></div><a class="embed-card" href="https://codepen.io/priyankatgit/pen/RwpddJr">https://codepen.io/priyankatgit/pen/RwpddJr</a></div>
+<p><br /><br />
+Credits:</p>
+<ul>
+<li>Cover photo: <a target="_blank" href="https://unsplash.com/@kellysikkema">@kellysikkema</a></li>
+<li>Rectangle draw example taken from <a target="_blank" href="http://fabricjs.com/fabric-intro-part-1#why_fabric">fabric</a>.</li>
+</ul>
+]]></description><link>https://www.nostalgia.dev/fabricjs-made-canvas-easy-as-pie</link><guid isPermaLink="true">https://www.nostalgia.dev/fabricjs-made-canvas-easy-as-pie</guid><dc:creator><![CDATA[Priyank Patel]]></dc:creator><pubDate>Sat, 19 Jun 2021 04:57:56 GMT</pubDate><cover_image>https://cdn.hashnode.com/res/hashnode/image/upload/v1623983417492/7w0Cdf8ek.jpeg</cover_image></item><item><title><![CDATA[Dbeaver -  Hidden gem for developers]]></title><description><![CDATA[<h3 id="dbeaver-ishttpsdbeaverio"><a target="_blank" href="https://dbeaver.io/">Dbeaver is</a></h3>
+<blockquote>
+<p>Free multi-platform database tool for developers, database administrators, analysts, and all people who need to work with databases. Supports all popular databases: MySQL, PostgreSQL, SQLite, Oracle, DB2, SQL Server, Sybase, MS Access, Teradata, Firebird, Apache Hive, Phoenix, Presto, etc.</p>
+<p>Has a lot of features including metadata editor, SQL editor, rich data editor, ERD, data export/import/migration, SQL execution plans, etc.</p>
+</blockquote>
+<p>Like I said It is a hidden gem for the developers then I mean it. Dbeaver has vast support for database connectivity. You can connect any database literally what you think of.</p>
+<p>It downloads and installs relevant database drivers when you connect any new type of database for the first time and it is one of the reasons it has less installer size and occupies less disk space even after installation despite the fact that it supports many databases. </p>
+<p><img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1623721566800/JqkvuI0CS.png" alt="All database" /></p>
+<h3 id="bonus-points">Bonus Points:</h3>
+<ul>
+<li>It is <a target="_blank" href="https://github.com/dbeaver/dbeaver">open-sourced</a></li>
+<li><a target="_blank" href="https://github.com/dbeaver/dbeaver/releases">Releasing new features and bugs</a> fixes immensely.</li>
+<li><a target="_blank" href="https://dbeaver.io/download/">Supports all OS</a> - Mac, Windows, Linux</li>
+</ul>
+<p><a target="_blank" href="https://twitter.com/dbeaver_news"><img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1623724193979/jOHguJ11E.png" alt="Twitter" /></a>
+<a target="_blank" href="https://github.com/dbeaver/dbeaver"><img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1623723335374/hpSP5jtWu.png" alt="Github]" /></a></p>
+]]></description><link>https://www.nostalgia.dev/dbeaver-hidden-gem-for-developers</link><guid isPermaLink="true">https://www.nostalgia.dev/dbeaver-hidden-gem-for-developers</guid><dc:creator><![CDATA[Priyank Patel]]></dc:creator><pubDate>Thu, 10 Jun 2021 05:35:31 GMT</pubDate><cover_image>https://cdn.hashnode.com/res/hashnode/image/upload/v1623720043987/7VfM8mM6s.png</cover_image></item></channel></rss>

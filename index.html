@@ -2,14 +2,13 @@
   <head>
     <script src="https://aframe.io/releases/1.2.0/aframe.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.2.0/dist/aframe-environment-component.min.js"></script>
+    <script src="https://rawgit.com/mayognaise/aframe-gif-shader/master/dist/aframe-gif-shader.min.js"></script>
     <script src="js/animation-mixer.js"></script>
     <script src="js/components.js"></script>
   </head>
   <body>
-    <a-scene>
-      <a-entity environment="preset: contact;lighting:point;skyType:color;skyColor:#000;grid:none;dressing:none;ground:noise;groundColor:#C67B5C;"></a-entity>
-
-      <a-assets>
+    <a-scene light="type: ambient; color: #BBB">
+      <a-assets id="assets">
         <img id="my-image" src="my_pic.jpeg" />
         <img id="imgJS" src="images/js_1.png" />
         <img id="imgNode" src="images/node.png" />
@@ -27,58 +26,122 @@
         <img id="imgPython" src="images/python1.jpeg" />
         <img id="imgJava" src="images/java.png" />
 
-        <video id="myIntro" src="intro2.mp4" autoplay loop="true"></video>
+        <img id="imgTwitter" src="images/twitter.png" />
+        <img id="imgStack" src="images/stack-overflow.png" />
+
+        <video id="myIntro" src="/intro2.mp4" autoplay loop="true"></video>
       </a-assets>
 
+      <a-entity environment="preset: contact;lighting:point;skyType:color;skyColor:#000;grid:none;dressing:none;ground:noise;groundColor:#C67B5C;"></a-entity>
+
+      <!-- Cursor Setup -1 2.2 -8-->
+      <a-entity position="0 2.2 4">
+        <a-entity camera look-controls wasd-controls>
+          <a-entity
+            position="0 0 -3"
+            geometry="primitive: ring; radiusInner: 0.03; radiusOuter: 0.04;"
+            material="color: cyan; shader: flat"
+            cursor="maxDistance: 30; fuse: true;rayOrigin: mouse"
+          >
+          </a-entity>
+        </a-entity>
+      </a-entity>
+
+      <!-- Sky decoration -->
       <a-entity position="0 20 0" scale="0.1 0.1 0.1">
         <a-entity starsky></a-entity>
       </a-entity>
       <a-entity earth position="-15 20 -50" scale="0.2 0.2 0.2"></a-entity>
       <a-entity light="type: spot; angle: 30" position="-15 16.0457 -43.4666" rotation="45 0 0"></a-entity>
 
-      <!-- <a-entity  position="10 4.5 -15">
-        <a-entity light="type: spot; penumbra: 0.5" position="5.25121 8 14" rotation="0 10 0"></a-entity>
-
-        <a-box rotation="0 0 0" position="0 1.5 0.08" color="tomato" width="4.3" height="4.3" depth="0.05">
-          <a-image src="#my-image" position="0 0 0.05" width="4" height="4"></a-image>
-        </a-box>
-
-        <a-entity
-          position="-0.00613 -0.80585 0.43755"
-          geometry="primitive: plane; height: 0.185; width: 4"
-          material="color: red"
-          text="width: 4; value: This text will be 4 units wide."
-        ></a-entity>
-      </a-entity> -->
-
       <!-- My Blogs -->
-      <a-box blog opacity="0.1" color="blue" width="1" height="1" depth="0.001" position="0 1.5 -1.5">
-
-        <a-text class="slide" color="white" align="center" baseline="top" width="1"
-          value="(Centered) default\n(roboto) font\nwith line break"></a-text>
-
-        <a-text class="slide" color="white" align="center" baseline="top" width="1"
-          value="(Centered) default\n(roboto) font\nwith line break *****"></a-text>
-
-        <!-- <a-text color="red" align="center" baseline="top" width="1" position="0 0.5 0" font="aileronsemibold"
-          value="Top of box\n(even when multi-line)\naileronsemibold font"></a-text>
-
-        <a-text color="red" align="center" baseline="bottom" width="1" position="0 -0.5 0"
-          value="Bottom of box\n(even when multi-line)"></a-text>
-
-        <a-text color="red" align="left" baseline="center" width="1" position="-0.5 0 0"
-          value="Left\nof box\n(even\nwhen\nmulti-\nline)"></a-text>
-
-        <a-text color="red" align="right" baseline="center" width="1" position="0.5 0 0"
-          value="Right\nof box\n(even\nwhen\nmulti-\nline)"></a-text> -->
+      <a-box
+        cursor-listener
+        blog=""
+        opacity="0.9"
+        color="#3F3351"
+        width="1.6"
+        height="1.3"
+        depth="0.001"
+        position="-7.08297 4 -5"
+        scale="3 3 3"
+        rotation="0 35 0"
+      >
+        <a-entity id="articleContainer"></a-entity>
+        <a-box color="#CF6E41" width="0.1" height="0.5" depth="1" position="-0.56744 -1.63298 -0.00669" geometry="height: 2" scale="1 1 0.1"> </a-box>
+        <a-box color="#CF6E41" width="0.1" height="0.5" depth="1" position="0.56744 -1.63298 -0.00669" geometry="height: 2" scale="1 1 0.1"> </a-box>
+        <a-text position="-0.64715 -1.25751 0.08801" value="Follow my latest Articles" text="width: 3"></a-text>
       </a-box>
 
+      <!-- Intro slides -->
+      <a-box aboutme opacity="0.9" color="#3F3351" width="3" height="1.8" depth="0.001" position="-4.65076 3.2008 -13.57624" scale="3 3 3" rotation="0 35 0">
+        <a-box color="#CF6E41" width="0.1" height="0.5" depth="1" position="-0.56744 -1.63298 -0.00669" geometry="height: 2" scale="1 1 0.1"> </a-box>
+        <a-box color="#CF6E41" width="0.1" height="0.5" depth="1" position="0.56744 -1.63298 -0.00669" geometry="height: 2" scale="1 1 0.1"> </a-box>
+        <a-text position="-0.38 -0.9881 0.08801" value="About ME" text="width: 3.6"></a-text>
+
+        <a-entity class="introSlide">
+          <a-entity position="0 0.2 0" text="color:white;align:center;width:3.5;value:Hi there, I'm Priyank!"></a-entity>
+          <a-entity
+            position="0 -0.12 0"
+            text="color:white;align:center;width:2.5;value:I am Project Manager at Intellial, based in India.\nI have joined Intellial in 2011."
+          ></a-entity>
+        </a-entity>
+
+        <a-text id="slideNr" position="0 -0.8 0" align="center" value="1/4" text="width: 3"></a-text>
+      </a-box>
+
+      <!-- Stack and Tools -->
+      <a-box
+        color="#3F3351"
+        width="3"
+        height="1.8"
+        depth="0.001"
+        position="48.48074 7.6662 -33.81485"
+        scale="3 3 3"
+        geometry="width: 4.5; height: 3.5"
+        material=""
+        rotation="0 -59.99999999999999 0"
+      >
+        <a-box color="#CF6E41" width="0.1" height="0.5" depth="1" position="-0.56744 -2.40619 -0.00669" geometry="height: 2" scale="1 1 0.1" material="">
+        </a-box>
+        <a-box color="#CF6E41" width="0.1" height="0.5" depth="1" position="0.56744 -2.4 -0.00669" geometry="height: 2" scale="1 1 0.1" material=""> </a-box>
+        <a-text position="-2.31394 -1.98113 0.39941" value="Current stack and Tools" text="width: 7.5"></a-text>
+
+        <a-entity>
+          <a-entity
+            position="0.02838 1.30679 0.01638"
+            text="baseline: top; color: white; width: 4;
+                  value: Active in: Python, Django, React/Next, Docker, Aframe, NFT
+
+                  Worked in: C#, Vue, Threejs(WebGL), Java/GWT
+
+                  Database: Postgres, MSSQL and Elasticsearch. For database management DBeaver and Kibana
+
+                  Message queue: NSQ, Redis, Celery, Azure Event Grid
+
+                  Cloud: AWS(EC2, RDS, Lambda, S3), Azure(MSG Queue, Azure Blob)
+
+                  Version Control: Bitbucket, Git and Git CLI"
+          ></a-entity></a-entity
+      ></a-box>
+
+      <!-- Social -->
+      <!-- <a-cylinder src="#imgTwitter" position="5.27831 3.08252 -48.75086" color="#1DA1F2" repeat="1" material="" geometry="radius: 2" rotation="0 112.84972004006299 90" animation="property: rotation; from: 0 90 90; to: 0 360 90; loop: true; dur: 20000"></a-cylinder>
+      <a-cylinder src="#imgStack" position="2 3.08252 -48.75086" color="#1DA1F2" repeat="1" material="" geometry="radius: 2" rotation="0 112.84972004006299 90" animation="property: rotation; from: 0 90 90; to: 0 360 90; loop: true; dur: 20000"></a-cylinder> -->
+
+      <!-- Billboard For the intro -->
       <a-entity position="34.04804 19.41699 -52.26572">
         <a-entity gltf-model="models/billboard/scene.gltf" scale="0.05 0.05 0.05" rotation="0 -90 0">
-        <!-- <a-image position="35.55966 342.73141 214.17749" scale="20 20 20" src="#my-image" width="4" height="4"
-          material="shader: standard" rotation="0 90 0" geometry="width: 13; height: 13"> -->
-        </a-image>
-          <a-light id="boardLightF1" type="spot" position="128.93391 172.30618 176.8728" light="angle: 55; decay: 1.01; intensity: 3; penumbra: 0.3; distance: 150" rotation="29.999999999999996 90 0">
+          <!-- <a-image position="35.55966 342.73141 214.17749" scale="20 20 20" src="#my-image" width="4" height="4"
+          material="shader: standard" rotation="0 90 0" geometry="width: 13; height: 13">
+        </a-image> -->
+          <a-light
+            id="boardLightF1"
+            type="spot"
+            position="128.93391 172.30618 176.8728"
+            light="angle: 55; decay: 1.01; intensity: 3; penumbra: 0.3; distance: 150"
+            rotation="29.999999999999996 90 0"
+          >
           </a-light>
           <a-light
             id="boardLightF2"
@@ -114,9 +177,14 @@
           >
           </a-light>
 
-          <a-entity scale="2 2 2" position="32.41647 328.05346 30.10496" geometry="width: 400; height: 200; depth: 0.8;" material="src: #myIntro;" rotation="0 90 0">
+          <a-entity
+            scale="2 2 2"
+            position="32.41647 328.05346 30.10496"
+            geometry="width: 400; height: 200; depth: 0.8;"
+            rotation="0 90 0"
+            material="src: #myIntro;"
+          >
           </a-entity>
-
 
           <a-entity
             scale="20 20 20"
@@ -128,55 +196,80 @@
         </a-entity>
       </a-entity>
 
-      <a-entity >
+      <!-- Skill-set Rack -->
+      <a-entity>
         <a-entity gltf-model="models/rack/scene.gltf" position="95.36717 0.9 -55.32373" scale="1.5 1.5 1.5" rotation="0 -100 0">
-          <a-plane height="5" width="5" position="16.80248 4.88467 45.54638" rotation="0 90 0" material="color: #534A4B"
-            geometry="height: 4; width: 1.3">
-            <a-entity text="value: My\nSkill\nSet; width: 5; color: #fff; letterSpacing: 1.2" position="6.78194 0 0.0196"
-              scale="3 3 3"></a-entity>
+          <a-plane height="5" width="5" position="16.80248 4.88467 45.54638" rotation="0 90 0" material="color: #534A4B" geometry="height: 4; width: 1.3">
+            <a-entity text="value: My\nSkill\nSet; width: 5; color: #fff; letterSpacing: 1.2" position="6.78194 0 0.0196" scale="3 3 3"></a-entity>
           </a-plane>
 
           <!-- <a-entity position="16.76975 4.88467 45.36073" rotation="0 90 0" geometry="primitive: plane; height: auto; width: auto" material="color: red"
             text="width:4;value: My\n\nSkill\n\nSet"></a-entity> -->
-          <a-light type="spot" position="37.95998 14.1592 31.77857" light="angle: 65; decay: 0; intensity: 0.8; penumbra: 0.5"
-            rotation="0 90 0">
-          </a-light>
-          <a-box src="#imgJS" position="15.27327 2.04013 42.74345" material="" geometry="depth: 3" rotation="0 90 0" height="3"
-            width="3"></a-box>
-          <a-box src="#imgNode" position="15.27532 5.16093 42.74345" material="" geometry="height: 2.8; depth: 3"
-            rotation="0 90 0" height="3" width="3"></a-box>
-          <a-box src="#imgReact" position="15.27195 8.22531 42.74345" material="" geometry="height: 2.8; depth: 3"
-            rotation="0 90 0" height="3" width="3"></a-box>
-          <a-box src="#imgVue" position="15.46572 10.30355 43.5478" material="" geometry="height: 1.5; width: 1.5; depth: 1.5"
-            rotation="0 90 0" height="3" width="3"></a-box>
-          <a-box src="#imgAng" position="15.4738 10.29285 41.93332" material="" geometry="height: 1.5; width: 1.5; depth: 1.5"
-            rotation="0 90 0" height="3" width="3"></a-box>
+          <a-light type="spot" position="37.95998 14.1592 31.77857" light="angle: 65; decay: 0; intensity: 0.8; penumbra: 0.5" rotation="0 90 0"> </a-light>
+          <a-box src="#imgJS" position="15.27327 2.04013 42.74345" material="" geometry="depth: 3" rotation="0 90 0" height="3" width="3"></a-box>
+          <a-box
+            src="#imgNode"
+            position="15.27532 5.16093 42.74345"
+            material=""
+            geometry="height: 2.8; depth: 3"
+            rotation="0 90 0"
+            height="3"
+            width="3"
+          ></a-box>
+          <a-box
+            src="#imgReact"
+            position="15.27195 8.22531 42.74345"
+            material=""
+            geometry="height: 2.8; depth: 3"
+            rotation="0 90 0"
+            height="3"
+            width="3"
+          ></a-box>
+          <a-box
+            src="#imgVue"
+            position="15.46572 10.30355 43.5478"
+            material=""
+            geometry="height: 1.5; width: 1.5; depth: 1.5"
+            rotation="0 90 0"
+            height="3"
+            width="3"
+          ></a-box>
+          <a-box
+            src="#imgAng"
+            position="15.4738 10.29285 41.93332"
+            material=""
+            geometry="height: 1.5; width: 1.5; depth: 1.5"
+            rotation="0 90 0"
+            height="3"
+            width="3"
+          ></a-box>
 
-            <a-box src="#imgPostgres" position="15.27327 2.04013 38.86906" material="" geometry="depth: 3" rotation="0 90 0"
-              height="2.8" width="3"></a-box>
-            <a-box src="#imgSQLServer" position="15.27327 5.16093 38.86906" material="" geometry="depth: 3" rotation="0 90 0"
-              height="2.8" width="3"></a-box>
-            <a-box src="#imgES" position="15.2688 8.24632 38.86906" material="" geometry="depth: 3"
-              rotation="0 90 0" height="2.8" width="3"></a-box>
-            <a-box src="#imgRedis" position="15.44719 10.63 38.71684" material="" geometry="height: 1.5; width: 1.5; depth: 1.5"
-              rotation="0 90 0" height="3" width="3"></a-box>
+          <a-box src="#imgPostgres" position="15.27327 2.04013 38.86906" material="" geometry="depth: 3" rotation="0 90 0" height="2.8" width="3"></a-box>
+          <a-box src="#imgSQLServer" position="15.27327 5.16093 38.86906" material="" geometry="depth: 3" rotation="0 90 0" height="2.8" width="3"></a-box>
+          <a-box src="#imgES" position="15.2688 8.24632 38.86906" material="" geometry="depth: 3" rotation="0 90 0" height="2.8" width="3"></a-box>
+          <a-box
+            src="#imgRedis"
+            position="15.44719 10.63 38.71684"
+            material=""
+            geometry="height: 1.5; width: 1.5; depth: 1.5"
+            rotation="0 90 0"
+            height="3"
+            width="3"
+          ></a-box>
 
-          <a-box src="#imgCSharp" position="15.26862 2.0399 35.11118" material="" geometry="depth: 3" rotation="0 90 0"
-            height="3" width="3"></a-box>
-          <a-box src="#imgJava" position="15.2597 5.17015 35.11118" material="" geometry="depth: 3" rotation="0 90 0"
-            height="2.8" width="3"></a-box>
-          <a-box src="#imgPython" position="15.25529 8.25435 35.11118" material="" geometry="depth: 3" rotation="0 90 0"
-            height="2.8" width="3"></a-box>
+          <a-box src="#imgCSharp" position="15.26862 2.0399 35.11118" material="" geometry="depth: 3" rotation="0 90 0" height="3" width="3"></a-box>
+          <a-box src="#imgJava" position="15.2597 5.17015 35.11118" material="" geometry="depth: 3" rotation="0 90 0" height="2.8" width="3"></a-box>
+          <a-box src="#imgPython" position="15.25529 8.25435 35.11118" material="" geometry="depth: 3" rotation="0 90 0" height="2.8" width="3"></a-box>
         </a-entity>
       </a-entity>
 
-      <!-- <a-entity
+      <!-- Robort for the fun -->
+      <a-entity
         animation-mixer="clip: Running;"
         gltf-model="models/RobotExpressive.glb"
         position="0 0.2 -16"
         animation="property: position; from:0 0.2 -100; to: 0 0.2 90; dur: 10000; easing: linear; loop:false"
-      ></a-entity> -->
+      ></a-entity>
     </a-scene>
   </body>
 </html>
-

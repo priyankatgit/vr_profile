@@ -1,0 +1,26 @@
+{
+  "workat": {
+    "title": "Hi there, I'm Priyank!",
+    "content": ["I am Project Manager at Intellial, based in India.\n\nI have joined Intellial in 2011."]
+  },
+  "aboutWork": {
+    "title": "What I do at Intellial?",
+    "content": [
+      "Involvement in Database design and defining application architecture.",
+      "Involvement in development of the core framework to increase faster development.",
+      "Planning, executing, monitoring, controlling, and delivering projects on time.",
+      "Communicating with Business Analysts, Client, and Developers and make sure to keep everybody on the same page."
+    ]
+  },
+  "currentWork": {
+    "title": "What am I currently working on?",
+    "content": ["On ERP Product which is specially targeted for Electronics and High Tech Manufacturing industry"]
+  },
+  "weekness": {
+    "title": "Soemthing Bad About Me",
+    "content": [
+      "Can't see bad indentation code, illogical variable, and function name, and spending most of my time suggesting it.",
+      "I don't like to reply when someone just sends 'HI' and wait for the response."
+    ]
+  }
+}

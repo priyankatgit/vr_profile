@@ -105,7 +105,6 @@ AFRAME.registerComponent("animation-mixer", {
 
     if (!clips.length) return;
 
-    console.log("clips", clips);
     const re = wildcardToRegExp(data.clip);
 
     for (let clip, i = 0; (clip = clips[i]); i++) {
